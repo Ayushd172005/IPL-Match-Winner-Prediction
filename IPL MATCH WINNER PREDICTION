@@ -1,0 +1,108 @@
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# -------------------------------
+# 1. Create Sample IPL Dataset
+# -------------------------------
+data = {
+    "team1": ["CSK","MI","RCB","KKR","RR","DC","SRH","CSK","MI","RCB"],
+    "team2": ["MI","RCB","KKR","CSK","DC","RR","CSK","RR","DC","SRH"],
+    "toss_winner": ["CSK","MI","RCB","CSK","RR","DC","CSK","RR","MI","RCB"],
+    "toss_decision": ["bat","field","bat","field","bat","field","field","bat","field","bat"],
+    "venue": ["Chennai","Mumbai","Bangalore","Kolkata","Jaipur","Delhi","Hyderabad","Jaipur","Mumbai","Bangalore"],
+    "winner": ["CSK","MI","RCB","CSK","RR","DC","CSK","RR","MI","RCB"]
+}
+
+df = pd.DataFrame(data)
+
+print("Dataset Preview:")
+display(df)
+
+# -------------------------------
+# 2. Encode Categorical Features
+# -------------------------------
+encoder = LabelEncoder()
+for col in df.columns:
+    df[col] = encoder.fit_transform(df[col])
+
+# -------------------------------
+# 3. Feature & Target Split
+# -------------------------------
+X = df.drop("winner", axis=1)
+y = df["winner"]
+
+# -------------------------------
+# 4. Train-Test Split
+# -------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42
+)
+
+# -------------------------------
+# 5. Train Random Forest Model
+# -------------------------------
+model = RandomForestClassifier(
+    n_estimators=200,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# -------------------------------
+# 6. Predictions & Evaluation
+# -------------------------------
+y_pred = model.predict(X_test)
+
+print("\nModel Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# -------------------------------
+# 7. Confusion Matrix
+# -------------------------------
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(5,4))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+plt.show()
+
+# -------------------------------
+# 8. Feature Importance
+# -------------------------------
+importance = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": model.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+print("\nFeature Importance:")
+display(importance)
+
+# -------------------------------
+# 9. Predict Winner for New Match
+# -------------------------------
+new_match = pd.DataFrame({
+    "team1": ["CSK"],
+    "team2": ["MI"],
+    "toss_winner": ["CSK"],
+    "toss_decision": ["bat"],
+    "venue": ["Chennai"]
+})
+
+for col in new_match.columns:
+    new_match[col] = encoder.fit_transform(new_match[col])
+
+prediction = model.predict(new_match)
+
+print("\nPredicted Winner for New Match:", prediction[0])
